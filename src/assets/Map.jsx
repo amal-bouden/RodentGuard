@@ -1,47 +1,55 @@
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-
-// Fix for default marker icons in React
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-// We use "../App.css" because this file is inside the /assets folder
 import "../App.css"; 
 
-let DefaultIcon = L.icon({
-    iconUrl: markerIcon,
-    shadowUrl: markerShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
+// Create standard red icon for alerts
+const redIconUrl = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png';
+const blueIconUrl = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
 
-export default function TrapMap({ isDark }) {
-  // Sousse, Tunisia Coordinates
-  const position = [35.8256, 10.6084]; 
+export default function TrapMap({ isDark, traps = [], center = [35.8256, 10.6084], zoom = 13, height = '200px', t }) {
+  
+  const getIcon = (isAlert) => {
+    return L.icon({
+      iconUrl: isAlert ? redIconUrl : blueIconUrl,
+      shadowUrl: markerShadow,
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+    });
+  };
 
   return (
-    <div className="map-frame">
+    <div className="map-frame" style={{ height, width: '100%' }}>
       <MapContainer 
-        center={position} 
-        zoom={13} 
-        scrollWheelZoom={false} 
-        style={{ height: '200px', width: '100%', borderRadius: '12px' }}
+        center={center} 
+        zoom={zoom} 
+        scrollWheelZoom={true} 
+        style={{ height: '100%', width: '100%', borderRadius: '12px' }}
       >
         <TileLayer
-          // High Contrast / Dark tiles for Mocha-Dark mode
           url={isDark 
             ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           }
           attribution='&copy; OpenStreetMap'
         />
-        <Marker position={position}>
-          <Popup>
-            SENTINEL_NODE_01 <br /> Sousse, Tunisia.
-          </Popup>
-        </Marker>
+        
+        {traps.map(trap => (
+          <Marker 
+            key={trap.id} 
+            position={[trap.lat, trap.lng]} 
+            icon={getIcon(trap.isAlert)}
+          >
+            <Popup>
+              <strong>{t ? t.unit : "Unit"} {trap.nameIndex}</strong> <br />
+              {t ? (trap.isAlert ? t.map_status.detected : t.map_status.standby) : ""} <br />
+              Bat: {trap.battery}%
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   );

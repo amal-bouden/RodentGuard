@@ -1,48 +1,160 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import './App.css';
-import TrapMap from './assets/Map'; 
-
-// 1. Stable Icon Component (Fixed outside to prevent render errors)
-const RatIcon = ({ isAlert }) => (
-  <svg viewBox="0 0 100 100" className={`svg-icon ${isAlert ? 'alert-pulse' : ''}`}>
-    <path d="M50 25C35 25 22 38 22 55C22 72 35 85 50 85C65 85 78 72 78 55C78 38 65 25 50 25Z" fill="none" stroke="currentColor" strokeWidth="3"/>
-    <circle cx="28" cy="30" r="10" fill="none" stroke="currentColor" strokeWidth="3" />
-    <circle cx="72" cy="30" r="10" fill="none" stroke="currentColor" strokeWidth="3" />
-    <circle cx="40" cy="52" r="3" fill="currentColor" />
-    <circle cx="60" cy="52" r="3" fill="currentColor" />
-    <path d="M15 60L5 62M15 65L4 70M85 60L95 62M85 65L96 70" stroke="currentColor" strokeWidth="1.5" />
-  </svg>
-);
+import Dashboard from './components/Dashboard';
+import UnitDetail from './components/UnitDetail';
+import MapScreen from './components/MapScreen';
+import AlertsScreen from './components/AlertsScreen';
+import SettingsScreen from './components/SettingsScreen';
+import Splash from './components/Splash';
+import { mockTraps } from './mockData';
+import { Home, Map as MapIcon, Bell, Settings } from 'lucide-react';
 
 const translations = {
   en: { 
-    unit: "SENTINEL_UNIT_01", ready: "SYSTEM_READY", active: "CAPTURE_ACTIVE", 
-    node: "NODE: NEXYS-3-6SLX16", sector: "SECTOR_ZONE", location: "KITCHEN_NORTH_BLOCK", 
-    signal: "VHDL_SIGNAL_STATUS", reset: "ACKNOWLEDGE ALERT", test: "TEST SYSTEM ALERT" 
+    unit: "SENTINEL_UNIT", ready: "SYSTEM_READY", active: "CAPTURE_ACTIVE", 
+    node: "NODE", sector: "SECTOR_ZONE", location: "LOCATION", 
+    signal: "LORA_RSSI_SIGNAL", reset: "ACKNOWLEDGE ALERT", test: "TEST SYSTEM ALERT",
+    sys_status: "System Status", active_nodes: "Active Nodes", captures: "Captures", low_batt: "Low Battery", connected_units: "Connected Units",
+    global_map: "Global Map Overview", gps_nodes: "Real-time GPS nodes",
+    alerts_hist: "Alerts History", event_log: "Chronological event log",
+    config: "Configuration", sys_pref: "System preferences",
+    nav_home: "Home", nav_map: "Map", nav_alerts: "Alerts", nav_settings: "Settings",
+    sectors: { kitchen: "KITCHEN NORTH BLOCK", stockA: "STOCK ROOM A", basement: "BASEMENT LEVEL 1", garbage: "GARBAGE AREA" },
+    logs: { capture_stock: "Rodent capture detected in Stock Room A.", bat_critical: "Battery level critical (15%). Requires maintenance.", capture_garbage: "Rodent capture detected in Garbage Area.", sys_diag_pass: "Weekly network diagnostic passed successfully.", capture_event: "Capture Detected", bat_event: "Low Battery", sys_event: "System Event" },
+    dates: { today: "Today", yesterday: "Yesterday" },
+    settings: { notif: "Notifications", sms: "SMS Alerts", email: "Email Reports", connection: "Connection", autosync: "Auto-Sync Mesh (LoRa / ESP Wi-Fi)", run_diag: "Run System Diagnostic", running: "Running Diagnostic...", net_mode: "Global Network Protocol", wifi: "ESP Wi-Fi (Prototype)", lora: "LoRa Mesh (Production)" },
+    map_status: { detected: "CAPTURE DETECTED", standby: "STANDBY" },
+    sensors: { weight: "WEIGHT", ir: "INFRARED", blocked: "BLOCKED", clear: "CLEAR", buzzer: "TRIGGER BUZZER", buzzer_stop: "STOP ALARM" }
   },
   fr: { 
-    unit: "UNITÉ_SENTINELLE_01", ready: "SYSTÈME_PRÊT", active: "CAPTURE_ACTIVE", 
-    node: "NŒUD: NEXYS-3-6SLX16", sector: "ZONE_SECTEUR", location: "BLOC_NORD_CUISINE", 
-    signal: "STATUT_SIGNAL_VHDL", reset: "ACQUITTER L'ALERTE", test: "TESTER L'ALERTE" 
+    unit: "UNITÉ_SENTINELLE", ready: "SYSTÈME_PRÊT", active: "CAPTURE_ACTIVE", 
+    node: "NŒUD", sector: "ZONE_SECTEUR", location: "LOCALISATION", 
+    signal: "SIGNAL_RSSI_LORA", reset: "ACQUITTER L'ALERTE", test: "TESTER L'ALERTE",
+    sys_status: "Statut du Système", active_nodes: "Nœuds Actifs", captures: "Captures", low_batt: "Batterie Faible", connected_units: "Unités Connectées",
+    global_map: "Carte Globale", gps_nodes: "Nœuds GPS en temps réel",
+    alerts_hist: "Historique", event_log: "Journal des évènements",
+    config: "Configuration", sys_pref: "Préférences système",
+    nav_home: "Accueil", nav_map: "Carte", nav_alerts: "Alertes", nav_settings: "Réglages",
+    sectors: { kitchen: "BLOC NORD CUISINE", stockA: "RÉSERVE A", basement: "SOUS-SOL NIVEAU 1", garbage: "ZONE DÉCHETS" },
+    logs: { capture_stock: "Capture de rongeur détectée dans la Réserve A.", bat_critical: "Niveau de batterie critique (15%). Maintenance requise.", capture_garbage: "Capture de rongeur détectée dans la Zone Déchets.", sys_diag_pass: "Diagnostic réseau hebdomadaire réussi.", capture_event: "Capture Détectée", bat_event: "Batterie Faible", sys_event: "Évènement Système" },
+    dates: { today: "Aujourd'hui", yesterday: "Hier" },
+    settings: { notif: "Notifications", sms: "Alertes SMS", email: "Rapports Email", connection: "Connexion", autosync: "Synchronisation maillée (LoRa / Wi-Fi)", run_diag: "Lancer le Diagnostic", running: "Diagnostic en cours...", net_mode: "Protocole Réseau Global", wifi: "ESP Wi-Fi (Prototype)", lora: "LoRa Mesh (Production)" },
+    map_status: { detected: "CAPTURE DÉTECTÉE", standby: "EN VEILLE" },
+    sensors: { weight: "POIDS", ir: "INFRAROUGE", blocked: "COUPÉ", clear: "RAS", buzzer: "ACTIVER BUZZER", buzzer_stop: "COUPER L'ALARME" }
   },
   ar: { 
-    unit: "وحدة_الحراسة_01", ready: "النظام_جاهز", active: "تم_الرصد", 
-    node: "عقدة: NEXYS-3-6SLX16", sector: "منطقة_القطاع", location: "كتلة_المطبخ_الشمالية", 
-    signal: "حالة_إشارة_VHDL", reset: "تأكيد التنبيه", test: "اختبار التنبيه" 
+    unit: "وحدة_الحراسة", ready: "النظام_جاهز", active: "تم_الرصد", 
+    node: "عقدة", sector: "منطقة_القطاع", location: "الموقع", 
+    signal: "إشارة_LORA_RSSI", reset: "تأكيد التنبيه", test: "اختبار التنبيه",
+    sys_status: "حالة النظام", active_nodes: "العقد النشطة", captures: "تم رصدها", low_batt: "بطارية ضعيفة", connected_units: "الوحدات المتصلة",
+    global_map: "خريطة شاملة", gps_nodes: "عقد GPS حية",
+    alerts_hist: "سجل التنبيهات", event_log: "سجل الأحداث الزمني",
+    config: "الإعدادات", sys_pref: "تفضيلات النظام",
+    nav_home: "الرئيسية", nav_map: "خريطة", nav_alerts: "تنبيهات", nav_settings: "إعدادات",
+    sectors: { kitchen: "كتلة المطبخ الشمالية", stockA: "المخزن أ", basement: "الطابق السفلي مستوى ١", garbage: "منطقة النفايات" },
+    logs: { capture_stock: "تم رصد قارض في المخزن أ.", bat_critical: "مستوى البطارية حرج (15٪). الصيانة مطلوبة.", capture_garbage: "تم رصد قارض في منطقة النفايات.", sys_diag_pass: "تم اجتياز فحص الشبكة الأسبوعي بنجاح.", capture_event: "تم الرصد", bat_event: "بطارية ضعيفة", sys_event: "حدث بالنظام" },
+    dates: { today: "اليوم", yesterday: "أمس" },
+    settings: { notif: "الإشعارات", sms: "تنبيهات SMS", email: "تقارير البريد", connection: "الاتصال", autosync: "مزامنة الشبكة", run_diag: "إجراء فحص النظام", running: "جاري الفحص...", net_mode: "بروتوكول الشبكة العام", wifi: "ESP Wi-Fi (نموذج)", lora: "LoRa Mesh (إنتاج)" },
+    map_status: { detected: "تم الرصد", standby: "في وضع الاستعداد" },
+    sensors: { weight: "الوزن", ir: "مستشعر الأشعة", blocked: "مقطوع", clear: "سليم", buzzer: "تشغيل الإنذار", buzzer_stop: "إيقاف الإنذار" }
   }
 };
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [isDark, setIsDark] = useState(false);
-  const [isAlert, setIsAlert] = useState(false);
   const [lang, setLang] = useState('en');
+  const [traps, setTraps] = useState(mockTraps);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedTrapId, setSelectedTrapId] = useState(null);
+
+  useEffect(() => {
+    // 1. Connect to our Express Backend
+    const socket = io("http://localhost:3000");
+
+    // 2. Fetch Initial live state
+    fetch("http://localhost:3000/api/traps")
+      .then(res => res.json())
+      .then(data => {
+        if(data && data.length) setTraps(data);
+      })
+      .catch(err => console.log('Running on mock data fallback'));
+
+    // 3. Listen for asynchronous hardware triggers!
+    socket.on("TRAP_UPDATE", (updatedTrap) => {
+      console.log("🔥 LIVE HARDWARE EVENT:", updatedTrap);
+      setTraps(prevTraps => 
+        prevTraps.map(tr => tr.id === updatedTrap.id ? updatedTrap : tr)
+      );
+    });
+
+    return () => socket.disconnect();
+  }, []);
 
   const t = translations[lang];
+
+  const handleSelectTrap = (trap) => {
+    setSelectedTrapId(trap.id);
+  };
+
+  const handleBack = () => {
+    setSelectedTrapId(null);
+  };
+
+  const toggleAlert = (id) => {
+    setTraps(traps.map(trap => 
+      trap.id === id ? { ...trap, isAlert: !trap.isAlert } : trap
+    ));
+  };
+
+  const toggleBuzzer = (id) => {
+    setTraps(traps.map(trap => 
+      trap.id === id ? { ...trap, buzzerOn: !trap.buzzerOn } : trap
+    ));
+  };
+
+  const selectedTrap = traps.find(tr => tr.id === selectedTrapId);
+
+  if (showSplash) {
+    return <Splash onComplete={() => setShowSplash(false)} />;
+  }
+
+  const renderContent = () => {
+    if (selectedTrapId) {
+      return (
+        <UnitDetail 
+          trap={selectedTrap} 
+          onBack={handleBack} 
+          isDark={isDark} 
+          t={t} 
+          toggleAlert={toggleAlert}
+          toggleBuzzer={toggleBuzzer}
+        />
+      );
+    }
+    
+    switch (activeTab) {
+      case 'map': return <MapScreen traps={traps} isDark={isDark} t={t} />;
+      case 'alerts': return <AlertsScreen t={t} />;
+      case 'settings': return <SettingsScreen t={t} />;
+      case 'dashboard':
+      default:
+        return (
+          <Dashboard 
+            traps={traps} 
+            onSelectTrap={handleSelectTrap} 
+            t={t} 
+          />
+        );
+    }
+  };
 
   return (
     <div className={`app-canvas ${isDark ? 'mocha-dark' : 'vanilla-light'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <div className="glass-container">
-        {/* Navbar */}
+        
+        {/* Top Navbar */}
         <nav className="navbar">
           <div className="lang-switcher">
             {['en', 'fr', 'ar'].map((l) => (
@@ -56,42 +168,33 @@ export default function App() {
           </button>
         </nav>
 
-        {/* Hero Section */}
-        <header className="hero-status">
-          <div className="logo-group">
-            <div className="logo-box" style={{ background: isAlert ? 'var(--alert-red)' : 'var(--mocha)' }}>RG</div>
-            <span>{t.unit}</span>
-          </div>
-          <div className="icon-vault">
-            <RatIcon isAlert={isAlert} />
-          </div>
-          <h1 className="status-heading">{isAlert ? t.active : t.ready}</h1>
-          <span className="sub-text">{t.node}</span>
-        </header>
-
-        {/* Info Deck */}
-        <div className="info-deck">
-          <TrapMap isDark={isDark} />
-          <div className="data-tile">
-            <label>{t.sector}</label>
-            <strong>{t.location}</strong>
-          </div>
-          <div className="data-tile">
-            <label>{t.signal}</label>
-            <strong style={{ color: isAlert ? 'var(--alert-red)' : 'inherit' }}>
-                {isAlert ? "0x01 (DETECTED)" : "0x00 (STANDBY)"}
-            </strong>
-          </div>
+        {/* Dynamic Inner Content Window */}
+        <div className="content-window">
+          {renderContent()}
         </div>
 
-        {/* Action Button */}
-        <button 
-          className="pro-btn" 
-          onClick={() => setIsAlert(!isAlert)}
-          style={{ background: isAlert ? 'var(--alert-red)' : 'var(--mocha)' }}
-        >
-          {isAlert ? t.reset : t.test}
-        </button>
+        {/* Bottom Tab Navigation */}
+        {!selectedTrapId && (
+          <nav className="bottom-nav">
+            <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+              <Home size={22} />
+              <span>{t.nav_home}</span>
+            </button>
+            <button className={`nav-item ${activeTab === 'map' ? 'active' : ''}`} onClick={() => setActiveTab('map')}>
+              <MapIcon size={22} />
+              <span>{t.nav_map}</span>
+            </button>
+            <button className={`nav-item ${activeTab === 'alerts' ? 'active' : ''}`} onClick={() => setActiveTab('alerts')}>
+              <Bell size={22} />
+              <span>{t.nav_alerts}</span>
+            </button>
+            <button className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+              <Settings size={22} />
+              <span>{t.nav_settings}</span>
+            </button>
+          </nav>
+        )}
+
       </div>
     </div>
   );

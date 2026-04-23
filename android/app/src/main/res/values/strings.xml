@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RodentGuard</string>
+    <string name="title_activity_main">RodentGuard</string>
+    <string name="package_name">com.rodentguard.app</string>
+    <string name="custom_url_scheme">com.rodentguard.app</string>
+</resources>
