@@ -1,19 +1,19 @@
 export const mockTraps = [
   {
-    id: "NEXYS-3-6SLX16",
+    id: "RG-NODE-01",
     nameIndex: "01",
     sectorKey: "kitchen",
     isAlert: false,
-    weight: 0, // grams
-    irActive: false, // infrared beam broken?
+    weight: 0,
+    irActive: false,
     buzzerOn: false,
     battery: 89,
-    signalStrength: -45, // dBm
+    signalStrength: -45,
     lat: 35.8256,
     lng: 10.6084,
   },
   {
-    id: "NEXYS-3-6SLX17",
+    id: "RG-NODE-02",
     nameIndex: "02",
     sectorKey: "stockA",
     isAlert: true,
@@ -26,7 +26,7 @@ export const mockTraps = [
     lng: 10.6184,
   },
   {
-    id: "NEXYS-3-6SLX18",
+    id: "RG-NODE-03",
     nameIndex: "03",
     sectorKey: "basement",
     isAlert: false,
@@ -39,7 +39,7 @@ export const mockTraps = [
     lng: 10.6010,
   },
   {
-    id: "NEXYS-3-6SLX19",
+    id: "RG-NODE-04",
     nameIndex: "04",
     sectorKey: "garbage",
     isAlert: true,
@@ -54,8 +54,6 @@ export const mockTraps = [
 ];
 
 export const mockAlertLogs = [
-  { id: 1, type: "CAPTURE", trapId: "NEXYS-3-6SLX17", time: "10:45 AM", dateKey: "today", msgKey: "capture_stock" },
-  { id: 2, type: "BATTERY", trapId: "NEXYS-3-6SLX18", time: "09:00 AM", dateKey: "today", msgKey: "bat_critical" },
-  { id: 3, type: "CAPTURE", trapId: "NEXYS-3-6SLX19", time: "08:30 AM", dateKey: "yesterday", msgKey: "capture_garbage" },
-  { id: 4, type: "SYSTEM", trapId: "NEXYS-NETWORK", time: "05:00 AM", dateKey: "yesterday", msgKey: "sys_diag_pass" }
+  { id: 1, type: "CAPTURE", trapId: "RG-NODE-02", time: "10:45 AM", dateKey: "today", msgKey: "capture_stock" },
+  { id: 2, type: "BATTERY", trapId: "RG-NODE-03", time: "09:00 AM", dateKey: "today", msgKey: "bat_critical" }
 ];

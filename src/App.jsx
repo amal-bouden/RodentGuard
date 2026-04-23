@@ -66,6 +66,7 @@ export default function App() {
   const [isDark, setIsDark] = useState(false);
   const [lang, setLang] = useState('en');
   const [traps, setTraps] = useState(mockTraps);
+  const [logs, setLogs] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedTrapId, setSelectedTrapId] = useState(null);
 
@@ -79,14 +80,24 @@ export default function App() {
       .then(data => {
         if(data && data.length) setTraps(data);
       })
-      .catch(err => console.log('Running on mock data fallback'));
+      .catch(err => console.log('Using mock traps fallback'));
+
+    fetch("http://localhost:3000/api/logs")
+      .then(res => res.json())
+      .then(data => {
+        if(data && data.length) setLogs(data);
+      })
+      .catch(err => console.log('Using mock logs fallback'));
 
     // 3. Listen for asynchronous hardware triggers!
     socket.on("TRAP_UPDATE", (updatedTrap) => {
-      console.log("🔥 LIVE HARDWARE EVENT:", updatedTrap);
       setTraps(prevTraps => 
         prevTraps.map(tr => tr.id === updatedTrap.id ? updatedTrap : tr)
       );
+    });
+
+    socket.on("LOG_UPDATE", (newLog) => {
+      setLogs(prevLogs => [newLog, ...prevLogs]);
     });
 
     return () => socket.disconnect();
@@ -103,15 +114,19 @@ export default function App() {
   };
 
   const toggleAlert = (id) => {
-    setTraps(traps.map(trap => 
-      trap.id === id ? { ...trap, isAlert: !trap.isAlert } : trap
-    ));
+    fetch(`http://localhost:3000/api/traps/${id}/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ field: 'isAlert' })
+    });
   };
 
   const toggleBuzzer = (id) => {
-    setTraps(traps.map(trap => 
-      trap.id === id ? { ...trap, buzzerOn: !trap.buzzerOn } : trap
-    ));
+    fetch(`http://localhost:3000/api/traps/${id}/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ field: 'buzzerOn' })
+    });
   };
 
   const selectedTrap = traps.find(tr => tr.id === selectedTrapId);
@@ -136,7 +151,7 @@ export default function App() {
     
     switch (activeTab) {
       case 'map': return <MapScreen traps={traps} isDark={isDark} t={t} />;
-      case 'alerts': return <AlertsScreen t={t} />;
+      case 'alerts': return <AlertsScreen t={t} logs={logs} />;
       case 'settings': return <SettingsScreen t={t} />;
       case 'dashboard':
       default:

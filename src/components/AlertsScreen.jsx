@@ -2,7 +2,9 @@ import React from 'react';
 import { ShieldAlert, BatteryWarning, Info } from 'lucide-react';
 import { mockAlertLogs } from '../mockData';
 
-export default function AlertsScreen({ t }) {
+export default function AlertsScreen({ t, logs }) {
+  const displayLogs = (logs && logs.length > 0) ? logs : mockAlertLogs;
+
   const getIcon = (type) => {
     switch(type) {
       case 'CAPTURE': return <ShieldAlert size={20} color="var(--alert-red)" />;
@@ -23,7 +25,7 @@ export default function AlertsScreen({ t }) {
       <p className="section-subtitle">{t.event_log}</p>
 
       <div className="timeline-container">
-        {mockAlertLogs.map(log => (
+        {displayLogs.map(log => (
           <div key={log.id} className="timeline-item">
             <div className="timeline-icon">
               {getIcon(log.type)}
@@ -31,9 +33,9 @@ export default function AlertsScreen({ t }) {
             <div className="timeline-content">
               <div className="timeline-header">
                 <strong>{getHeader(log.type)}</strong>
-                <span className="timeline-time">{t.dates[log.dateKey]} {log.time}</span>
+                <span className="timeline-time">{t.dates[log.dateKey] || log.dateKey} {log.time}</span>
               </div>
-              <p className="timeline-msg">{t.logs[log.msgKey]}</p>
+              <p className="timeline-msg">{t.logs[log.msgKey] || log.msgKey}</p>
               <span className="timeline-node">{log.trapId}</span>
             </div>
           </div>
