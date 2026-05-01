@@ -1,4 +1,5 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 const express = require("express");
 const cors = require("cors");
@@ -39,8 +40,11 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the React app build folder
+app.use(express.static(path.join(__dirname, "../dist")));
+
 // Default Route
-app.get("/", (req, res) => {
+app.get("/api-status", (req, res) => {
   res.send("RodentGuard backend is running 🐀");
 });
 
@@ -51,6 +55,11 @@ app.use("/api/traps", trapRoutes(io));         // buzzer needs io
 app.use("/api/logs", logRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/device", deviceRoutes(io));      // ping/alert need io
+
+// Redirect all other requests to React app (SPA support)
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(__dirname, "../dist", "index.html"));
+// });
 
 // Socket.io Events
 io.on("connection", (socket) => {

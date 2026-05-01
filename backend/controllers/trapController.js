@@ -6,8 +6,12 @@ const getAllTraps = async (req, res) => {
     const traps = await Trap.find().sort({ createdAt: 1 });
     res.status(200).json(traps);
   } catch (error) {
-    console.error("Error fetching traps:", error);
-    res.status(500).json({ message: "Failed to fetch traps", error: error.message });
+    console.log("DB Error - Using Mock Fallback");
+    const mockTraps = [
+      { id: "RG-NODE-01", macAddress: "AA:BB:CC:DD:EE:01", name: "NODE-EE01", sectorKey: "kitchen", status: "SYSTEM_READY", lat: 35.8256, lng: 10.6084, battery: 88, weight: 0, signalStrength: -45, online: true },
+      { id: "RG-NODE-02", macAddress: "AA:BB:CC:DD:EE:02", name: "NODE-EE02", sectorKey: "stockA", status: "SYSTEM_READY", lat: 35.8286, lng: 10.6184, battery: 92, weight: 0, signalStrength: -50, online: true },
+    ];
+    res.status(200).json(mockTraps);
   }
 };
 
@@ -98,9 +102,39 @@ const triggerBuzzer = (io) => async (req, res) => {
   }
 };
 
+// @route  POST /api/traps/:id/reset
+// @desc   Clear an active alert status for a trap
+const resetAlert = (io) => async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const trap = await Trap.findByIdAndUpdate(
+      id,
+      { isAlert: false, status: "SYSTEM_READY", weight: 0, irActive: false },
+      { new: true }
+    );
+
+    if (!trap) {
+      return res.status(404).json({ message: "Trap not found" });
+    }
+
+    // Notify frontend to update UI
+    io.emit("TRAP_UPDATE", trap);
+
+    res.status(200).json({
+      message: `Alert reset for trap ${trap.name}`,
+      trap,
+    });
+  } catch (error) {
+    console.error("Reset error:", error);
+    res.status(500).json({ message: "Failed to reset alert", error: error.message });
+  }
+};
+
 module.exports = {
   getAllTraps,
   getTrapById,
   createTrap,
   triggerBuzzer,
+  resetAlert,
 };

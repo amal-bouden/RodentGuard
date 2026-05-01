@@ -52,16 +52,16 @@ export default function SettingsScreen({ t }) {
         
         <div className="settings-row">
           <div className="settings-label" style={{ opacity: isLora ? 0.5 : 1}}>
-            <RefreshCcw size={18} />
-            <span style={{ fontSize: '0.8rem' }}>{t.settings.wifi}</span>
+            <RefreshCcw size={18} color={!isLora ? '#4CAF50' : 'currentColor'} />
+            <span style={{ fontSize: '0.8rem', color: !isLora ? '#4CAF50': 'inherit', fontWeight: !isLora ? 'bold' : 'normal' }}>{t.settings.wifi}</span>
           </div>
           <label className="switch" style={{ margin: '0 10px'}}>
             <input type="checkbox" checked={isLora} onChange={() => setIsLora(!isLora)} />
             <span className="slider round"></span>
           </label>
           <div className="settings-label" style={{ opacity: !isLora ? 0.5 : 1}}>
-            <CloudCog size={18} />
-            <span style={{ fontSize: '0.8rem', color: isLora ? '#4CAF50': 'inherit' }}>{t.settings.lora}</span>
+            <CloudCog size={18} color={isLora ? '#4CAF50' : 'currentColor'} />
+            <span style={{ fontSize: '0.8rem', color: isLora ? '#4CAF50': 'inherit', fontWeight: isLora ? 'bold' : 'normal' }}>{t.settings.lora}</span>
           </div>
         </div>
       </div>

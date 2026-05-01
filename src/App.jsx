@@ -71,18 +71,18 @@ export default function App() {
   const [selectedTrapId, setSelectedTrapId] = useState(null);
 
   useEffect(() => {
-    // 1. Connect to our Express Backend
-    const socket = io("http://localhost:3000");
+    // 1. Connect to our Express Backend (Production port 8080)
+    const socket = io("http://10.187.74.71:8080");
 
     // 2. Fetch Initial live state
-    fetch("http://localhost:3000/api/traps")
+    fetch("http://10.187.74.71:8080/api/traps")
       .then(res => res.json())
       .then(data => {
         if(data && data.length) setTraps(data);
       })
       .catch(err => console.log('Using mock traps fallback'));
 
-    fetch("http://localhost:3000/api/logs")
+    fetch("http://10.187.74.71:8080/api/logs")
       .then(res => res.json())
       .then(data => {
         if(data && data.length) setLogs(data);
@@ -91,9 +91,39 @@ export default function App() {
 
     // 3. Listen for asynchronous hardware triggers!
     socket.on("TRAP_UPDATE", (updatedTrap) => {
-      setTraps(prevTraps => 
-        prevTraps.map(tr => tr.id === updatedTrap.id ? updatedTrap : tr)
-      );
+      if (!updatedTrap) return;
+      setTraps(prevTraps => {
+        const mac = updatedTrap.macAddress || updatedTrap.id || "UNKNOWN";
+        const exists = prevTraps.some(tr => tr.id === updatedTrap.id || tr.macAddress === updatedTrap.macAddress);
+        if (exists) {
+          return prevTraps.map(tr => tr.id === updatedTrap.id || tr.macAddress === updatedTrap.macAddress ? { ...tr, ...updatedTrap } : tr);
+        } else {
+          return [...prevTraps, {
+            ...updatedTrap,
+            id: mac,
+            macAddress: mac,
+            name: `NODE-${mac.toString().slice(-5)}`,
+            sectorKey: "new_zone"
+          }];
+        }
+      });
+    });
+
+    socket.on("TRAP_ALERT", (data) => {
+      if (!data || !data.trap) return;
+      const { trap, log, message } = data;
+      console.log(message);
+      setLogs(prevLogs => [log, ...prevLogs]);
+      
+      setTraps(prevTraps => {
+        const mac = trap.macAddress || "UNKNOWN";
+        const exists = prevTraps.some(tr => tr.macAddress === mac);
+        if (exists) {
+          return prevTraps.map(tr => tr.macAddress === mac ? { ...tr, ...trap } : tr);
+        } else {
+          return [...prevTraps, { ...trap, id: mac, name: `NODE-${mac.toString().slice(-5)}` }];
+        }
+      });
     });
 
     socket.on("LOG_UPDATE", (newLog) => {
@@ -103,7 +133,7 @@ export default function App() {
     return () => socket.disconnect();
   }, []);
 
-  const t = translations[lang];
+  const t = translations[lang] || translations.en;
 
   const handleSelectTrap = (trap) => {
     setSelectedTrapId(trap.id);
@@ -114,22 +144,25 @@ export default function App() {
   };
 
   const toggleAlert = (id) => {
-    fetch(`http://localhost:3000/api/traps/${id}/toggle`, {
+    // Clear the alert on the backend
+    fetch(`http://10.187.74.71:8080/api/traps/${id}/reset`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ field: 'isAlert' })
+      headers: { 'Content-Type': 'application/json' }
     });
   };
 
   const toggleBuzzer = (id) => {
-    fetch(`http://localhost:3000/api/traps/${id}/toggle`, {
+    const trap = traps.find(t => t.id === id || t._id === id);
+    const newState = !trap.buzzerOn;
+
+    fetch(`http://10.187.74.71:8080/api/traps/${id}/buzzer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ field: 'buzzerOn' })
+      body: JSON.stringify({ activate: newState })
     });
   };
 
-  const selectedTrap = traps.find(tr => tr.id === selectedTrapId);
+  const selectedTrap = traps.find(tr => String(tr.id) === String(selectedTrapId) || String(tr._id) === String(selectedTrapId));
 
   if (showSplash) {
     return <Splash onComplete={() => setShowSplash(false)} />;

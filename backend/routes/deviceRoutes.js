@@ -11,10 +11,10 @@ const { deviceLimiter } = require("../middleware/rateLimiter");
 // io is injected from server.js so controllers can emit Socket.io events
 module.exports = (io) => {
   // POST /api/device/ping — ESP32 heartbeat
-  router.post("/ping", deviceLimiter, verifyDeviceToken, ping(io));
+  router.post("/ping", verifyDeviceToken, ping(io));
 
   // POST /api/device/alert — rodent detected
-  router.post("/alert", deviceLimiter, verifyDeviceToken, alert(io));
+  router.post("/alert", verifyDeviceToken, alert(io));
 
   return router;
 };

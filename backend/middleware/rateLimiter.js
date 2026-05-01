@@ -16,14 +16,11 @@ const apiLimiter = rateLimit({
 // Strict device limiter (for ESP32 hardware endpoints)
 const deviceLimiter = rateLimit({
   windowMs: 5 * 1000, // 5 seconds
-  max: 1,
+  max: 10, // Increased slightly for testing
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: "Device rate limit exceeded — max 1 request per 5 seconds" },
-  keyGenerator: (req) => {
-    // Rate limit per IP (each ESP32 has its own IP)
-    return req.ip;
-  },
+  message: { message: "Device rate limit exceeded — max 10 requests per 5 seconds" },
+  validate: { trustProxy: false } // Disable some validations for local testing
 });
 
 // Auth limiter — prevents brute force login attacks

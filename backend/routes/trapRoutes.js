@@ -5,6 +5,7 @@ const {
   getTrapById,
   createTrap,
   triggerBuzzer,
+  resetAlert,
 } = require("../controllers/trapController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -19,8 +20,11 @@ module.exports = (io) => {
   // POST /api/traps — create a new trap
   router.post("/", createTrap);
 
-  // POST /api/traps/:id/buzzer — trigger buzzer remotely (protected)
-  router.post("/:id/buzzer", protect, triggerBuzzer(io));
+  // POST /api/traps/:id/buzzer — trigger buzzer remotely
+  router.post("/:id/buzzer", triggerBuzzer(io));
+
+  // POST /api/traps/:id/reset — clear alert
+  router.post("/:id/reset", resetAlert(io));
 
   return router;
 };

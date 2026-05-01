@@ -32,21 +32,36 @@ export default function UnitDetail({ trap, onBack, isDark, t, toggleAlert, toggl
           <RatIcon isAlert={trap.isAlert} />
         </div>
         <h1 className="status-heading">{trap.isAlert ? t.active : t.ready}</h1>
-        <span className="sub-text">NODE: {trap.id}</span>
+        <span className="sub-text">NODE: {trap.macAddress || trap.id}</span>
       </header>
 
       {/* Info Deck */}
       <div className="info-deck">
-        <TrapMap isDark={isDark} traps={[{...trap}]} center={[trap.lat, trap.lng]} zoom={16} t={t} />
+        <TrapMap 
+          isDark={isDark} 
+          traps={trap.lat && trap.lng ? [{...trap}] : []} 
+          center={trap.lat && trap.lng ? [trap.lat, trap.lng] : [35.8256, 10.6084]} 
+          zoom={16} 
+          t={t} 
+        />
         <div className="stats-row">
           <div className="data-tile">
             <label>{t.sector}</label>
-            <strong>{t.sectors[trap.sectorKey]}</strong>
+            <strong>{t.sectors[trap.sectorKey] || trap.sectorKey || "UNASSIGNED"}</strong>
           </div>
           <div className="data-tile">
             <label>BATTERY</label>
-            <strong style={{ color: trap.battery < 20 ? 'var(--alert-red)' : 'inherit' }}>
-              {trap.battery}%
+            <strong style={{ color: (trap.battery || 100) < 20 ? 'var(--alert-red)' : 'inherit' }}>
+              {trap.battery !== undefined ? trap.battery : 100}%
+            </strong>
+          </div>
+        </div>
+
+        <div className="stats-row">
+          <div className="data-tile" style={{ width: '100%' }}>
+            <label>GPS COORDINATES</label>
+            <strong>
+              {trap.lat ? `${trap.lat.toFixed(6)}, ${trap.lng.toFixed(6)}` : "WAITING FOR GPS LOCK..."}
             </strong>
           </div>
         </div>
@@ -54,7 +69,7 @@ export default function UnitDetail({ trap, onBack, isDark, t, toggleAlert, toggl
         <div className="stats-row">
           <div className="data-tile">
             <label>{t.sensors.weight}</label>
-            <strong>{trap.weight} g</strong>
+            <strong>{trap.weight !== undefined ? trap.weight : 0} g</strong>
           </div>
           <div className="data-tile">
             <label>{t.sensors.ir}</label>

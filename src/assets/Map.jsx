@@ -37,14 +37,14 @@ export default function TrapMap({ isDark, traps = [], center = [35.8256, 10.6084
           attribution='&copy; OpenStreetMap'
         />
         
-        {traps.map(trap => (
+        {traps.filter(trap => trap.lat && trap.lng).map(trap => (
           <Marker 
-            key={trap.id} 
+            key={trap.id || trap._id} 
             position={[trap.lat, trap.lng]} 
             icon={getIcon(trap.isAlert)}
           >
             <Popup>
-              <strong>{t ? t.unit : "Unit"} {trap.nameIndex}</strong> <br />
+              <strong>{t ? t.unit : "Unit"} {trap.nameIndex || trap.name}</strong> <br />
               {t ? (trap.isAlert ? t.map_status.detected : t.map_status.standby) : ""} <br />
               Bat: {trap.battery}%
             </Popup>
