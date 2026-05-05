@@ -148,18 +148,45 @@ export default function App() {
     fetch(`http://10.187.74.71:8080/api/traps/${id}/reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
-    });
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log("Alert reset:", data);
+      // Update local state immediately
+      setTraps(prevTraps => prevTraps.map(t => 
+        (t.id === id || t.macAddress === id) 
+          ? { ...t, isAlert: false, status: "SYSTEM_READY", weight: 0, irActive: false }
+          : t
+      ));
+    })
+    .catch(err => console.error("Reset error:", err));
   };
 
   const toggleBuzzer = (id) => {
-    const trap = traps.find(t => t.id === id || t._id === id);
+    const trap = traps.find(t => t.id === id || t._id === id || t.macAddress === id);
+    if (!trap) {
+      console.error("Trap not found:", id);
+      return;
+    }
+    
     const newState = !trap.buzzerOn;
 
     fetch(`http://10.187.74.71:8080/api/traps/${id}/buzzer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ activate: newState })
-    });
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log("Buzzer toggled:", data);
+      // Update local state immediately
+      setTraps(prevTraps => prevTraps.map(t => 
+        (t.id === id || t.macAddress === id || t._id === id)
+          ? { ...t, buzzerOn: newState }
+          : t
+      ));
+    })
+    .catch(err => console.error("Buzzer error:", err));
   };
 
   const selectedTrap = traps.find(tr => String(tr.id) === String(selectedTrapId) || String(tr._id) === String(selectedTrapId));
@@ -185,7 +212,7 @@ export default function App() {
     switch (activeTab) {
       case 'map': return <MapScreen traps={traps} isDark={isDark} t={t} />;
       case 'alerts': return <AlertsScreen t={t} logs={logs} />;
-      case 'settings': return <SettingsScreen t={t} />;
+      case 'settings': return <SettingsScreen t={t} lang={lang} setLang={setLang} isDark={isDark} setIsDark={setIsDark} />;
       case 'dashboard':
       default:
         return (
@@ -202,20 +229,6 @@ export default function App() {
     <div className={`app-canvas ${isDark ? 'mocha-dark' : 'vanilla-light'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <div className="glass-container">
         
-        {/* Top Navbar */}
-        <nav className="navbar">
-          <div className="lang-switcher">
-            {['en', 'fr', 'ar'].map((l) => (
-              <button key={l} onClick={() => setLang(l)} className={lang === l ? 'active-lang' : ''}>
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
-          <button className="toggle-pill" onClick={() => setIsDark(!isDark)}>
-            <div className={`pill-circle ${isDark ? 'right' : 'left'}`}></div>
-          </button>
-        </nav>
-
         {/* Dynamic Inner Content Window */}
         <div className="content-window">
           {renderContent()}

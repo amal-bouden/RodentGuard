@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "supervisor", "viewer"],
       default: "supervisor",
     },
+    tenantId: {
+      type: String,
+      default: "default_tenant",
+    },
   },
   { timestamps: true }
 );

@@ -63,7 +63,6 @@ const createTrap = async (req, res) => {
 // @route  POST /api/traps/:id/buzzer
 // @desc   Trigger or stop the buzzer on a specific trap remotely
 // @body   { activate: true | false }
-// @auth   Protected — requires JWT
 const triggerBuzzer = (io) => async (req, res) => {
   const { id } = req.params;
   const { activate } = req.body;
@@ -73,27 +72,52 @@ const triggerBuzzer = (io) => async (req, res) => {
       return res.status(400).json({ message: "activate must be a boolean (true to trigger, false to stop)" });
     }
 
-    const trap = await Trap.findByIdAndUpdate(
-      id,
-      { buzzerOn: activate },
-      { new: true }
-    );
+    let trap = null;
+    
+    try {
+      // Try MongoDB first
+      trap = await Trap.findByIdAndUpdate(
+        id,
+        { buzzerOn: activate },
+        { new: true }
+      );
+    } catch (dbError) {
+      console.log("DB Query failed, using demo mode");
+      trap = null;
+    }
 
+    // Demo mode fallback - create virtual trap object
     if (!trap) {
-      return res.status(404).json({ message: "Trap not found" });
+      trap = {
+        _id: id,
+        macAddress: id,
+        nodeId: id,
+        name: `NODE-${id.toString().slice(-5)}`,
+        buzzerOn: activate
+      };
+      console.log(`[BUZZER] Demo mode: ${activate ? "Activated" : "Deactivated"} for ${id}`);
+    } else {
+      console.log(`[BUZZER] DB mode: ${activate ? "Activated" : "Deactivated"} for ${trap.name}`);
     }
 
     // Emit buzzer command via Socket.io — ESP32 listens for this event
     io.emit("BUZZER_COMMAND", {
-      trapId: trap._id,
+      trapId: trap._id || trap.id,
       macAddress: trap.macAddress,
       nodeId: trap.nodeId,
       activate,
     });
 
+    // Broadcast update to frontend
+    io.emit("TRAP_UPDATE", {
+      id: trap._id || trap.id,
+      macAddress: trap.macAddress,
+      buzzerOn: activate
+    });
+
     const action = activate ? "activated" : "deactivated";
     res.status(200).json({
-      message: `Buzzer ${action} for trap ${trap.name}`,
+      message: `Buzzer ${action} for trap ${trap.name || trap.macAddress}`,
       trap,
     });
   } catch (error) {
@@ -108,21 +132,49 @@ const resetAlert = (io) => async (req, res) => {
   const { id } = req.params;
 
   try {
-    const trap = await Trap.findByIdAndUpdate(
-      id,
-      { isAlert: false, status: "SYSTEM_READY", weight: 0, irActive: false },
-      { new: true }
-    );
+    let trap = null;
+    
+    try {
+      // Try MongoDB first
+      trap = await Trap.findByIdAndUpdate(
+        id,
+        { isAlert: false, status: "SYSTEM_READY", weight: 0, irActive: false },
+        { new: true }
+      );
+    } catch (dbError) {
+      console.log("DB Query failed, using demo mode");
+      trap = null;
+    }
 
+    // Demo mode fallback - create virtual trap object
     if (!trap) {
-      return res.status(404).json({ message: "Trap not found" });
+      trap = {
+        _id: id,
+        macAddress: id,
+        nodeId: id,
+        name: `NODE-${id.toString().slice(-5)}`,
+        isAlert: false,
+        status: "SYSTEM_READY",
+        weight: 0,
+        irActive: false
+      };
+      console.log(`[RESET] Demo mode: Alert cleared for ${id}`);
+    } else {
+      console.log(`[RESET] DB mode: Alert cleared for ${trap.name}`);
     }
 
     // Notify frontend to update UI
-    io.emit("TRAP_UPDATE", trap);
+    io.emit("TRAP_UPDATE", {
+      id: trap._id || trap.id,
+      macAddress: trap.macAddress,
+      isAlert: false,
+      status: "SYSTEM_READY",
+      weight: 0,
+      irActive: false
+    });
 
     res.status(200).json({
-      message: `Alert reset for trap ${trap.name}`,
+      message: `Alert reset for trap ${trap.name || trap.macAddress}`,
       trap,
     });
   } catch (error) {

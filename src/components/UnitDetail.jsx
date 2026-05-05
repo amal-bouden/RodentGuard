@@ -17,13 +17,13 @@ export default function UnitDetail({ trap, onBack, isDark, t, toggleAlert, toggl
   if (!trap) return null;
 
   return (
-    <div className="unit-detail-view slide-in" style={{ paddingBottom: '20px' }}>
+    <div className="unit-detail-view slide-in" style={{ paddingBottom: '5px' }}>
       <button className="back-btn" onClick={onBack}>
         <ArrowLeft size={18} />
         <span>Back</span>
       </button>
 
-      <header className="hero-status" style={{ marginTop: '15px' }}>
+      <header className="hero-status stagger-1" style={{ marginTop: '15px' }}>
         <div className="logo-group" style={{ justifyContent: 'center' }}>
           <div className="logo-box" style={{ background: trap.isAlert ? 'var(--alert-red)' : 'var(--mocha)' }}>RG</div>
           <span>{t.unit} {trap.nameIndex}</span>
@@ -36,13 +36,14 @@ export default function UnitDetail({ trap, onBack, isDark, t, toggleAlert, toggl
       </header>
 
       {/* Info Deck */}
-      <div className="info-deck">
+      <div className="info-deck stagger-2">
         <TrapMap 
           isDark={isDark} 
           traps={trap.lat && trap.lng ? [{...trap}] : []} 
           center={trap.lat && trap.lng ? [trap.lat, trap.lng] : [35.8256, 10.6084]} 
           zoom={16} 
           t={t} 
+          height="100px"
         />
         <div className="stats-row">
           <div className="data-tile">
@@ -58,19 +59,58 @@ export default function UnitDetail({ trap, onBack, isDark, t, toggleAlert, toggl
         </div>
 
         <div className="stats-row">
-          <div className="data-tile" style={{ width: '100%' }}>
-            <label>GPS COORDINATES</label>
-            <strong>
-              {trap.lat ? `${trap.lat.toFixed(6)}, ${trap.lng.toFixed(6)}` : "WAITING FOR GPS LOCK..."}
+          <div className="data-tile">
+            <label>LAST SYNC</label>
+            <strong>{trap.lastSeen ? new Date(trap.lastSeen).toLocaleTimeString() : "UNKNOWN"}</strong>
+          </div>
+          <div className="data-tile">
+            <label>CAPTURE TIME</label>
+            <strong style={{ color: trap.isAlert ? 'var(--alert-red)' : 'inherit' }}>
+              {trap.isAlert && trap.capturedAt ? new Date(trap.capturedAt).toLocaleString() : "--"}
             </strong>
           </div>
         </div>
 
         <div className="stats-row">
           <div className="data-tile">
+            <label>GPS COORDINATES</label>
+            <strong>{trap.lat ? `${trap.lat.toFixed(6)}, ${trap.lng.toFixed(6)}` : "WAITING..."}</strong>
+          </div>
+          <div className="data-tile">
+            <label>{t.signal}</label>
+            <strong style={{ color: trap.isAlert ? 'var(--alert-red)' : 'inherit' }}>
+                {trap.signalStrength}dBm
+            </strong>
+          </div>
+        </div>
+
+        <div className="stats-row">
+          <div className="data-tile">
+            <label>ENVIRONMENT</label>
+            <strong>{trap.temperature !== undefined ? `${trap.temperature}°C / ${trap.humidity}%` : "N/A"}</strong>
+          </div>
+          <div className="data-tile">
+            <label>SPECIES DETECTED</label>
+            <strong style={{ color: trap.speciesDetected && trap.speciesDetected !== 'Unknown' ? 'var(--alert-red)' : 'inherit' }}>
+              {trap.speciesDetected || "None"}
+            </strong>
+          </div>
+        </div>
+
+        <div className="stats-row">
+          <div className="data-tile">
+            <label>MECHANISM</label>
+            <strong style={{ color: trap.doorClosed ? 'var(--alert-red)' : '#4CAF50' }}>
+              {trap.doorClosed ? "SNAPPED SHUT" : "OPEN (READY)"}
+            </strong>
+          </div>
+          <div className="data-tile">
             <label>{t.sensors.weight}</label>
             <strong>{trap.weight !== undefined ? trap.weight : 0} g</strong>
           </div>
+        </div>
+
+        <div className="stats-row">
           <div className="data-tile">
             <label>{t.sensors.ir}</label>
             <strong style={{ color: trap.irActive ? 'var(--alert-red)' : 'inherit' }}>
@@ -78,16 +118,9 @@ export default function UnitDetail({ trap, onBack, isDark, t, toggleAlert, toggl
             </strong>
           </div>
         </div>
-        
-        <div className="data-tile">
-          <label>{t.signal}</label>
-          <strong style={{ color: trap.isAlert ? 'var(--alert-red)' : 'inherit' }}>
-              {trap.isAlert ? "0x01 (DETECTED) - " + trap.signalStrength + "dBm" : "0x00 (STANDBY) - " + trap.signalStrength + "dBm"}
-          </strong>
-        </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
+      <div className="stagger-3" style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
         <button 
           className="pro-btn" 
           onClick={() => toggleBuzzer(trap.id)}

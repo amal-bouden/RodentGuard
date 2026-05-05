@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Battery, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Activity, Battery, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 
 export default function Dashboard({ traps, onSelectTrap, t }) {
   const totalTraps = traps.length;
@@ -61,7 +61,12 @@ export default function Dashboard({ traps, onSelectTrap, t }) {
             </div>
             
             <div className="trap-item-details">
-              <span>{t.sectors[trap.sectorKey]}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Clock size={12} /> 
+                {trap.capturedAt && trap.isAlert 
+                  ? new Date(trap.capturedAt).toLocaleTimeString() 
+                  : trap.lastSeen ? new Date(trap.lastSeen).toLocaleTimeString() : "N/A"}
+              </span>
               <span className="trap-battery">
                 <Battery size={14} /> {trap.battery}%
               </span>

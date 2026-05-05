@@ -17,6 +17,11 @@ const trapSchema = new mongoose.Schema(
     irActive:       { type: Boolean, default: false },
     isAlert:        { type: Boolean, default: false },
     buzzerOn:       { type: Boolean, default: false },
+    
+    tenantId:       { type: String, default: "default_tenant" },
+    temperature:    { type: Number },
+    humidity:       { type: Number },
+    speciesDetected:{ type: String },
 
     status: {
       type: String,

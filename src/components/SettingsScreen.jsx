@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Smartphone, Mail, CloudCog, RefreshCcw, BellRing, Wifi } from 'lucide-react';
+import { Smartphone, Mail, CloudCog, RefreshCcw, BellRing, Wifi, Moon, Globe } from 'lucide-react';
 
-export default function SettingsScreen({ t }) {
+export default function SettingsScreen({ t, lang, setLang, isDark, setIsDark }) {
   const [sms, setSms] = useState(true);
   const [email, setEmail] = useState(true);
   const [autoSync, setAutoSync] = useState(true);
@@ -20,6 +20,34 @@ export default function SettingsScreen({ t }) {
     <div className="page-view slide-in">
       <h2 className="section-title">{t.config}</h2>
       <p className="section-subtitle">{t.sys_pref}</p>
+
+      <div className="settings-group">
+        <h3 className="settings-group-title"><Globe size={14} /> Appearance & Language</h3>
+        
+        <div className="settings-row">
+          <div className="settings-label">
+            <Globe size={18} />
+            <span>Language / Langue</span>
+          </div>
+          <div className="lang-switcher">
+            {['en', 'fr', 'ar'].map((l) => (
+              <button key={l} onClick={() => setLang(l)} className={lang === l ? 'active-lang' : ''} style={{ padding: '8px 12px', fontSize: '0.7rem' }}>
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-label">
+            <Moon size={18} />
+            <span>Dark Mode</span>
+          </div>
+          <button className="toggle-pill" onClick={() => setIsDark(!isDark)}>
+            <div className={`pill-circle ${isDark ? 'right' : 'left'}`}></div>
+          </button>
+        </div>
+      </div>
 
       <div className="settings-group">
         <h3 className="settings-group-title"><BellRing size={14} /> {t.settings.notif}</h3>
